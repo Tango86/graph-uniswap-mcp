@@ -2,7 +2,7 @@
 
 MCP server for querying Uniswap V3/V4 DEX data via The Graph's decentralized network.
 
-16 tools, 5 guided prompts. 5 chains, 9 subgraphs. Pools, swaps, prices, liquidity, whale tracking, and more.
+29 tools, 5 guided prompts. 9 chains, 13 subgraphs. Pools, swaps, prices, liquidity, whale tracking, and more.
 
 ## Supported Chains
 
@@ -13,6 +13,10 @@ MCP server for querying Uniswap V3/V4 DEX data via The Graph's decentralized net
 | Arbitrum | Yes | Yes |
 | Polygon | Yes | Yes |
 | Optimism | Yes | - |
+| BNB Chain | Yes | - |
+| Avalanche | Yes | - |
+| Celo | Yes | - |
+| Blast | Yes | - |
 
 ## Setup (30 seconds)
 

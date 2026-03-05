@@ -88,6 +88,52 @@ export const CHAINS: Record<string, ChainConfig> = {
       "pool / swap / mint / burn / token (same schema as Ethereum V3)",
     ],
   },
+  "bsc-v3": {
+    name: "Uniswap V3 BNB Chain",
+    chain: "BNB Chain",
+    version: "v3",
+    subgraphId: "F85MNzUGYqgSHSHRGgeVMNsdnW1KtZSVgFULumXRZTw2",
+    description:
+      "Uniswap V3 on BNB Smart Chain. " +
+      "Note: ethPriceUSD reflects native BNB price, not ETH.",
+    keyEntities: [
+      "pool / swap / mint / burn / token (same schema as Ethereum V3)",
+    ],
+  },
+  "avalanche-v3": {
+    name: "Uniswap V3 Avalanche",
+    chain: "Avalanche",
+    version: "v3",
+    subgraphId: "GVH9h9KZ9CqheUEL93qMbq7QwgoBu32QXQDPR6bev4Eo",
+    description:
+      "Uniswap V3 on Avalanche C-Chain. " +
+      "Note: ethPriceUSD reflects native AVAX price, not ETH.",
+    keyEntities: [
+      "pool / swap / mint / burn / token (same schema as Ethereum V3)",
+    ],
+  },
+  "celo-v3": {
+    name: "Uniswap V3 Celo",
+    chain: "Celo",
+    version: "v3",
+    subgraphId: "ESdrTJ3twMwWVoQ1hUE2u7PugEHX3QkenudD6aXCkDQ4",
+    description:
+      "Uniswap V3 on Celo. Mobile-first blockchain with cUSD/CELO liquidity.",
+    keyEntities: [
+      "pool / swap / mint / burn / token (same schema as Ethereum V3)",
+    ],
+  },
+  "blast-v3": {
+    name: "Uniswap V3 Blast",
+    chain: "Blast",
+    version: "v3",
+    subgraphId: "2LHovKznvo8YmKC9ZprPjsYAZDCc4K5q4AYz8s3cnQn1",
+    description:
+      "Uniswap V3 on Blast L2. Native yield chain with USDB/WETH liquidity.",
+    keyEntities: [
+      "pool / swap / mint / burn / token (same schema as Ethereum V3)",
+    ],
+  },
 
   // ── V4 ──────────────────────────────────────────────────────────────────
   "ethereum-v4": {

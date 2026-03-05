@@ -1612,7 +1612,7 @@ server.registerTool(
           first: ${limit}
           orderBy: ${orderBy}
           orderDirection: desc
-          where: { totalValueLockedUSD_gt: "100" }
+          where: { totalValueLockedUSD_gt: "100", txCount_gt: "100" }
         ) {
           id
           symbol
