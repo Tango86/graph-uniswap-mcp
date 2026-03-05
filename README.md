@@ -97,8 +97,26 @@ Works with Claude Desktop, Cursor, Cline, and any MCP-compatible client.
 | Protocol entity | Factory | PoolManager |
 | Liquidity events | Mint + Burn | ModifyLiquidity |
 | Pool fields | Standard | + hooks, tickSpacing, isExternalLiquidity |
-| Positions | Via events | Position entity with tokenId |
+| Positions | Via events | ModifyLiquidity events (Position entity is limited) |
 | Swap recipient | Included | Not included |
+
+## Known Limitations
+
+### poolCount always returns 0
+
+The `poolCount` field on token entities returns 0 across all chains. This is a subgraph indexing issue: the field exists in the Uniswap subgraph schema but the mapping handlers never increment it. The MCP server removes `poolCount` from display outputs and sort options to avoid confusion. The raw subgraph data may still include the field.
+
+### Flash events may return empty
+
+`get_flash_events` can return empty results. Flash loans on Uniswap V3 are genuinely rare (most flash loan activity happens on Aave/dYdX). An empty result is valid, not an error.
+
+### Swap simulation is an off-chain estimate
+
+`simulate_swap` and `get_price_impact` walk the pool's tick liquidity distribution to estimate outputs. They cannot account for MEV, pool state changes between query and execution, V4 hook effects, or rounding differences. A disclaimer is included in all simulation outputs.
+
+### V4 position data is event-based
+
+The V4 subgraph's Position entity only stores id/tokenId/owner/origin. Full position data (pool, tick range, liquidity) is only available via ModifyLiquidity events, which is what `get_positions` queries. This means results show liquidity change events rather than current position snapshots.
 
 ## Data Source
 
