@@ -1,0 +1,48 @@
+{
+  "name": "graph-uniswap-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for querying Uniswap V3/V4 DEX data via The Graph - pools, swaps, positions, prices, liquidity across 5 chains (Ethereum, Base, Arbitrum, Polygon, Optimism)",
+  "type": "module",
+  "bin": {
+    "graph-uniswap-mcp": "build/index.js"
+  },
+  "main": "./build/index.js",
+  "scripts": {
+    "build": "tsc && chmod 755 build/index.js",
+    "start": "node build/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "build"
+  ],
+  "keywords": [
+    "mcp",
+    "uniswap",
+    "defi",
+    "dex",
+    "thegraph",
+    "subgraph",
+    "ethereum",
+    "base",
+    "arbitrum",
+    "liquidity",
+    "pools",
+    "swaps",
+    "ai",
+    "claude",
+    "cursor"
+  ],
+  "author": "aclews",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
