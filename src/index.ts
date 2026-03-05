@@ -219,7 +219,7 @@ server.registerTool(
   async ({ chain, orderBy, limit }) => {
     try {
       const cfg = getChainConfig(chain);
-      const hooksField = cfg.version === "v4" ? "hooks\n        tickSpacing\n        isExternalLiquidity" : "";
+      const hooksField = cfg.version === "v4" ? "hooks\n        tickSpacing" : "";
       const query = `{
         pools(
           first: ${limit}
@@ -280,7 +280,7 @@ server.registerTool(
   async ({ chain, poolId }) => {
     try {
       const cfg = getChainConfig(chain);
-      const hooksField = cfg.version === "v4" ? "hooks\n      tickSpacing\n      isExternalLiquidity" : "";
+      const hooksField = cfg.version === "v4" ? "hooks\n      tickSpacing" : "";
       const query = `{
         pool(id: "${poolId.toLowerCase()}") {
           id
@@ -982,6 +982,7 @@ server.registerTool(
   {
     description:
       "Get the current ETH price in USD from Uniswap's price oracle on a specific chain. " +
+      "On non-Ethereum chains (Polygon, etc.), this returns the native token price (e.g. POL), not ETH. " +
       "Example: 'What is the ETH price on Ethereum according to Uniswap?'",
     inputSchema: {
       chain: z.enum(CHAIN_NAMES).describe("Chain key"),

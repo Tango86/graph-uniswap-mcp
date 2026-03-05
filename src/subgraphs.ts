@@ -99,7 +99,7 @@ export const CHAINS: Record<string, ChainConfig> = {
       "Uniswap V4 on Ethereum mainnet. Singleton PoolManager contract with hooks support. " +
       "New architecture with customizable pool logic.",
     keyEntities: [
-      "pool (token0, token1, feeTier, tickSpacing, hooks, liquidity, sqrtPrice, token0Price, token1Price, totalValueLockedUSD, volumeUSD, isExternalLiquidity)",
+      "pool (token0, token1, feeTier, tickSpacing, hooks, liquidity, sqrtPrice, token0Price, token1Price, totalValueLockedUSD, volumeUSD)",
       "swap (sender, amount0, amount1, amountUSD, sqrtPriceX96, tick, timestamp)",
       "modifyLiquidity (sender, amount, amount0, amount1, amountUSD, tickLower, tickUpper)",
       "position (tokenId, owner, origin)",
@@ -110,9 +110,9 @@ export const CHAINS: Record<string, ChainConfig> = {
     name: "Uniswap V4 Base",
     chain: "Base",
     version: "v4",
-    subgraphId: "2L6yxqUZ7dT6GWoTy9qxNBkf9kEk65me3XPMvbGsmJUZ",
+    subgraphId: "Gqm2b5J85n1bhCyDMpGbtbVn4935EvvdyHdHrx3dibyj",
     description:
-      "Uniswap V4 on Base. Highest query volume V4 deployment (~246.6M queries/30d). " +
+      "Uniswap V4 on Base. Highest query volume V4 deployment (~247M queries/30d, 3 active Indexers). " +
       "Hooks-enabled pools on Coinbase L2.",
     keyEntities: [
       "pool / swap / modifyLiquidity / position / token (same schema as Ethereum V4)",
@@ -135,7 +135,9 @@ export const CHAINS: Record<string, ChainConfig> = {
     version: "v4",
     subgraphId: "CwpebM66AH5uqS5sreKij8yEkkPcHvmyEs7EwFtdM5ND",
     description:
-      "Uniswap V4 on Polygon. V4 hooks-enabled pools on Polygon.",
+      "Uniswap V4 on Polygon. V4 hooks-enabled pools on Polygon. " +
+      "Note: ethPriceUSD reflects native POL token price (not ETH). " +
+      "Data quality may be lower due to spam pool activity.",
     keyEntities: [
       "pool / swap / modifyLiquidity / position / token (same schema as Ethereum V4)",
     ],
