@@ -184,11 +184,18 @@ server.registerTool(
 
       if (stats && typeof stats === "object") {
         const s = stats as Record<string, unknown>;
+        // Clamp negative TVL (known V4 subgraph accounting issue)
+        const rawTvl = Number(s.totalValueLockedUSD ?? 0);
+        const tvl = rawTvl < 0 ? 0 : rawTvl;
+        if (rawTvl < 0) {
+          s.totalValueLockedUSD = "0";
+          s._tvlNote = "TVL data unavailable (subgraph reports negative value)";
+        }
         result._humanReadable = {
           totalPools: formatNumber(s.poolCount as string),
           totalVolume: formatUSD(s.totalVolumeUSD as string),
           totalFees: formatUSD(s.totalFeesUSD as string),
-          tvl: formatUSD(s.totalValueLockedUSD as string),
+          tvl: rawTvl < 0 ? "N/A (data unavailable)" : formatUSD(tvl),
           ethPrice: formatUSD(bundle?.ethPriceUSD as string),
         };
       }
@@ -445,12 +452,14 @@ server.registerTool(
       const cfg = getChainConfig(chain);
       const recipientField = cfg.version === "v3" ? "recipient" : "";
 
+      // Filter to last 24 hours so results are recent, not all-time
+      const oneDayAgo = Math.floor(Date.now() / 1000) - 86400;
       const query = `{
         swaps(
           first: ${limit}
           orderBy: amountUSD
           orderDirection: desc
-          where: { amountUSD_gte: "${minAmountUSD}" }
+          where: { amountUSD_gte: "${minAmountUSD}", timestamp_gte: "${oneDayAgo}" }
         ) {
           id
           timestamp
@@ -2164,7 +2173,7 @@ server.registerTool(
           const tokenQuery = `{
             tokens(
               first: 1
-              where: { symbol_contains_nocase: "${tokenSymbol}" }
+              where: { symbol: "${tokenSymbol}" }
               orderBy: totalValueLockedUSD
               orderDirection: desc
             ) {

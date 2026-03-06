@@ -96,8 +96,14 @@ export async function querySubgraph(
   };
 
   if (json.errors && json.errors.length > 0) {
+    // Provide friendlier message for indexer unavailability
+    const errStr = JSON.stringify(json.errors);
+    const isIndexerUnavailable = errStr.includes("bad indexers") || errStr.includes("Unavailable") || errStr.includes("no allocations");
+    const message = isIndexerUnavailable
+      ? "Subgraph indexers are temporarily unavailable for this chain. Try again in a few minutes."
+      : `GraphQL errors: ${errStr}`;
     throw new GraphClientError(
-      `GraphQL errors: ${JSON.stringify(json.errors)}`,
+      message,
       undefined,
       json.errors
     );
