@@ -89,12 +89,12 @@ export const CHAINS: Record<string, ChainConfig> = {
     ],
   },
   "bsc-v3": {
-    name: "Uniswap V3 BNB Chain",
+    name: "PancakeSwap V3 BNB Chain",
     chain: "BNB Chain",
     version: "v3",
-    subgraphId: "F85MNzUGYqgSHSHRGgeVMNsdnW1KtZSVgFULumXRZTw2",
+    subgraphId: "Hv1GncLY5docZoGtXjo4kwbTvxm3MAhVZqBZE4sUT9eZ",
     description:
-      "Uniswap V3 on BNB Smart Chain. " +
+      "PancakeSwap V3 on BNB Smart Chain (Uniswap V3 fork, same schema). " +
       "Note: ethPriceUSD reflects native BNB price, not ETH.",
     keyEntities: [
       "pool / swap / mint / burn / token (same schema as Ethereum V3)",

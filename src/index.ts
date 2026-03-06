@@ -1480,8 +1480,10 @@ server.registerTool(
   async ({ chain, days }) => {
     try {
       const cfg = getChainConfig(chain);
+      // PancakeSwap uses pancakeDayDatas, Uniswap uses uniswapDayDatas
+      const entityName = chain === "bsc-v3" ? "pancakeDayDatas" : "uniswapDayDatas";
       const query = `{
-        uniswapDayDatas(
+        ${entityName}(
           first: ${days}
           orderBy: date
           orderDirection: desc
@@ -1496,7 +1498,7 @@ server.registerTool(
       }`;
 
       const data = (await querySubgraph(cfg.subgraphId, query)) as Record<string, unknown>;
-      const dayDatas = ((data.uniswapDayDatas as Array<Record<string, unknown>>) ?? []).map((d) => {
+      const dayDatas = ((data[entityName] as Array<Record<string, unknown>>) ?? []).map((d) => {
         d._humanReadable = {
           date: new Date(Number(d.date) * 1000).toISOString().slice(0, 10),
           volume: formatUSD(d.volumeUSD as string),
