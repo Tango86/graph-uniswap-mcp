@@ -134,6 +134,17 @@ export const CHAINS: Record<string, ChainConfig> = {
       "pool / swap / mint / burn / token (same schema as Ethereum V3)",
     ],
   },
+  "unichain-v3": {
+    name: "Uniswap V3 Unichain",
+    chain: "Unichain",
+    version: "v3",
+    subgraphId: "Eeg7Gq1ofowbpdTHcNYs4FotnHSddkz5iTNiQQVq7Q6K",
+    description:
+      "Uniswap V3 on Unichain (Uniswap's own L2). Native Uniswap deployment with deep liquidity.",
+    keyEntities: [
+      "pool / swap / mint / burn / token (same schema as Ethereum V3)",
+    ],
+  },
 
   // ── V4 ──────────────────────────────────────────────────────────────────
   "ethereum-v4": {
@@ -184,6 +195,17 @@ export const CHAINS: Record<string, ChainConfig> = {
       "Uniswap V4 on Polygon. V4 hooks-enabled pools on Polygon. " +
       "Note: ethPriceUSD reflects native POL token price (not ETH). " +
       "Data quality may be lower due to spam pool activity.",
+    keyEntities: [
+      "pool / swap / modifyLiquidity / position / token (same schema as Ethereum V4)",
+    ],
+  },
+  "unichain-v4": {
+    name: "Uniswap V4 Unichain",
+    chain: "Unichain",
+    version: "v4",
+    subgraphId: "EoCvJ5tyMLMJcTnLQwWpjAtPdn74PcrZgzfcT5bYxNBH",
+    description:
+      "Uniswap V4 on Unichain. V4 hooks-enabled pools on Uniswap's own L2.",
     keyEntities: [
       "pool / swap / modifyLiquidity / position / token (same schema as Ethereum V4)",
     ],

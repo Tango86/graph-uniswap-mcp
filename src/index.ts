@@ -2582,6 +2582,273 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
+// Tool 30: get_token_price_history
+// ---------------------------------------------------------------------------
+server.registerTool(
+  "get_token_price_history",
+  {
+    description:
+      "Get historical daily price data for a token by symbol (no address needed). " +
+      "Resolves the token symbol to an address automatically, then returns OHLC price history. " +
+      "Easier than get_token_day_data when you don't know the contract address. " +
+      "Example: 'Show me PEPE price history on Ethereum V3 for the last 30 days'",
+    inputSchema: {
+      chain: z.enum(CHAIN_NAMES).describe("Chain key"),
+      tokenSymbol: z.string().describe("Token symbol (e.g., 'PEPE', 'WETH', 'USDC')"),
+      days: z.number().min(1).max(365).default(30).describe("Number of days of history (1-365)"),
+    },
+  },
+  async ({ chain, tokenSymbol, days }) => {
+    try {
+      const cfg = getChainConfig(chain);
+
+      // Resolve symbol to address (pick highest-TVL match)
+      const resolveQuery = `{
+        tokens(
+          first: 1
+          where: { symbol_contains_nocase: "${tokenSymbol}" }
+          orderBy: totalValueLockedUSD
+          orderDirection: desc
+        ) { id symbol name totalValueLockedUSD derivedETH }
+      }`;
+      const resolveData = (await querySubgraph(cfg.subgraphId, resolveQuery)) as Record<string, unknown>;
+      const tokens = (resolveData.tokens as Array<Record<string, unknown>>) ?? [];
+      if (tokens.length === 0) {
+        return textResult({ error: `No token matching "${tokenSymbol}" found on ${cfg.name}` });
+      }
+      const token = tokens[0];
+      const tokenAddress = (token.id as string).toLowerCase();
+
+      // Get ETH price for USD conversion
+      const bundleQuery = `{ bundle(id: "1") { ethPriceUSD } }`;
+
+      // Get day data
+      const dayQuery = `{
+        tokenDayDatas(
+          first: ${days}
+          orderBy: date
+          orderDirection: desc
+          where: { token: "${tokenAddress}" }
+        ) {
+          date
+          priceUSD
+          open
+          high
+          low
+          close
+          volumeUSD
+          totalValueLockedUSD
+        }
+      }`;
+
+      const [bundleData, dayData] = await Promise.all([
+        querySubgraph(cfg.subgraphId, bundleQuery),
+        querySubgraph(cfg.subgraphId, dayQuery),
+      ]);
+
+      const ethPrice = Number(
+        ((bundleData as Record<string, unknown>).bundle as Record<string, unknown>)?.ethPriceUSD ?? 0
+      );
+      const derivedETH = Number(token.derivedETH ?? 0);
+      const currentPriceUSD = derivedETH * ethPrice;
+
+      const dayDatas = ((dayData as Record<string, unknown>).tokenDayDatas as Array<Record<string, unknown>>) ?? [];
+      const formatted = dayDatas.map((d) => ({
+        date: new Date(Number(d.date) * 1000).toISOString().slice(0, 10),
+        open: formatUSD(d.open as string),
+        high: formatUSD(d.high as string),
+        low: formatUSD(d.low as string),
+        close: formatUSD(d.close as string),
+        volume: formatUSD(d.volumeUSD as string),
+        tvl: formatUSD(d.totalValueLockedUSD as string),
+      }));
+
+      // Compute summary stats
+      const closes = dayDatas.map((d) => Number(d.close)).filter((n) => n > 0);
+      const highs = dayDatas.map((d) => Number(d.high)).filter((n) => n > 0);
+      const lows = dayDatas.map((d) => Number(d.low)).filter((n) => n > 0);
+
+      const summary: Record<string, unknown> = {
+        currentPrice: formatUSD(currentPriceUSD),
+        daysReturned: formatted.length,
+      };
+      if (closes.length >= 2) {
+        const oldest = closes[closes.length - 1];
+        const newest = closes[0];
+        const changePct = oldest > 0 ? ((newest - oldest) / oldest) * 100 : 0;
+        summary.periodChange = `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%`;
+      }
+      if (highs.length > 0) summary.periodHigh = formatUSD(Math.max(...highs));
+      if (lows.length > 0) summary.periodLow = formatUSD(Math.min(...lows));
+
+      return textResult({
+        chain: cfg.name,
+        token: token.symbol,
+        tokenName: token.name,
+        tokenAddress,
+        summary,
+        priceHistory: formatted,
+      });
+    } catch (e) {
+      return errorResult(e);
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Tool 31: get_pool_concentration
+// ---------------------------------------------------------------------------
+server.registerTool(
+  "get_pool_concentration",
+  {
+    description:
+      "Analyze liquidity concentration around the current price for a pool. " +
+      "Shows how liquidity is distributed across tick ranges near the active tick. " +
+      "Useful for understanding if liquidity is tightly concentrated or spread out, " +
+      "which affects slippage and LP returns. " +
+      "Example: 'Show me liquidity concentration for the ETH/USDC 0.3% pool on Ethereum V3'",
+    inputSchema: {
+      chain: z.enum(CHAIN_NAMES).describe("Chain key"),
+      poolId: z.string().describe("Pool address"),
+      tickRange: z.number().min(100).max(50000).default(5000).describe(
+        "How many ticks above and below current tick to analyze (default 5000, ~65% price range for 0.3% pool)"
+      ),
+    },
+  },
+  async ({ chain, poolId, tickRange }) => {
+    try {
+      const cfg = getChainConfig(chain);
+
+      // Get pool details + ticks in parallel
+      const poolQuery = `{
+        pool(id: "${poolId.toLowerCase()}") {
+          id
+          tick
+          sqrtPrice
+          liquidity
+          feeTier
+          token0 { id symbol name decimals }
+          token1 { id symbol name decimals }
+          token0Price
+          token1Price
+          totalValueLockedUSD
+          totalValueLockedToken0
+          totalValueLockedToken1
+        }
+      }`;
+
+      const poolData = (await querySubgraph(cfg.subgraphId, poolQuery)) as Record<string, unknown>;
+      const pool = poolData.pool as Record<string, unknown>;
+      if (!pool) {
+        return textResult({ error: `Pool ${poolId} not found on ${cfg.name}` });
+      }
+
+      const currentTick = Number(pool.tick);
+      const lowerBound = currentTick - tickRange;
+      const upperBound = currentTick + tickRange;
+
+      const ticksQuery = `{
+        ticks(
+          first: 500
+          orderBy: tickIdx
+          orderDirection: asc
+          where: {
+            pool: "${poolId.toLowerCase()}"
+            tickIdx_gte: ${lowerBound}
+            tickIdx_lte: ${upperBound}
+          }
+        ) {
+          tickIdx
+          liquidityGross
+          liquidityNet
+          price0
+          price1
+        }
+      }`;
+
+      const ticksData = (await querySubgraph(cfg.subgraphId, ticksQuery)) as Record<string, unknown>;
+      const ticks = ((ticksData.ticks as Array<Record<string, unknown>>) ?? []);
+
+      const t0 = pool.token0 as Record<string, unknown>;
+      const t1 = pool.token1 as Record<string, unknown>;
+      const pair = `${t0?.symbol ?? "?"}/${t1?.symbol ?? "?"}`;
+
+      // Analyze concentration: split ticks into bands around current price
+      const bandSize = Math.max(Math.floor(tickRange / 5), 1);
+      const bands: Array<Record<string, unknown>> = [];
+
+      for (let i = -5; i < 5; i++) {
+        const bandLower = currentTick + i * bandSize;
+        const bandUpper = currentTick + (i + 1) * bandSize;
+        const bandTicks = ticks.filter((t) => {
+          const idx = Number(t.tickIdx);
+          return idx >= bandLower && idx < bandUpper;
+        });
+        const totalLiquidityGross = bandTicks.reduce(
+          (sum, t) => sum + Math.abs(Number(t.liquidityGross ?? 0)),
+          0
+        );
+        const tickCount = bandTicks.length;
+
+        // Price at band boundaries (approximate from tick)
+        const priceLower = Math.pow(1.0001, bandLower);
+        const priceUpper = Math.pow(1.0001, bandUpper);
+
+        bands.push({
+          range: i === 0 ? "ACTIVE" : i < 0 ? `${Math.abs(i)} below` : `${i} above`,
+          tickRange: `${bandLower} to ${bandUpper}`,
+          priceRange: `${formatNumber(priceLower)} to ${formatNumber(priceUpper)}`,
+          initializedTicks: tickCount,
+          liquidityGross: totalLiquidityGross.toExponential(2),
+          isCurrentBand: i === 0,
+        });
+      }
+
+      // Summary stats
+      const totalGrossLiquidity = ticks.reduce(
+        (sum, t) => sum + Math.abs(Number(t.liquidityGross ?? 0)),
+        0
+      );
+      const innerTicks = ticks.filter((t) => {
+        const idx = Number(t.tickIdx);
+        return idx >= currentTick - bandSize && idx < currentTick + bandSize;
+      });
+      const innerLiquidity = innerTicks.reduce(
+        (sum, t) => sum + Math.abs(Number(t.liquidityGross ?? 0)),
+        0
+      );
+      const concentrationRatio = totalGrossLiquidity > 0
+        ? ((innerLiquidity / totalGrossLiquidity) * 100).toFixed(1) + "%"
+        : "N/A";
+
+      return textResult({
+        chain: cfg.name,
+        pool: {
+          pair,
+          feeTier: formatFeeTier(pool.feeTier as string),
+          currentTick,
+          token0Price: formatNumber(pool.token0Price as string),
+          token1Price: formatNumber(pool.token1Price as string),
+          tvl: formatUSD(pool.totalValueLockedUSD as string),
+          activeLiquidity: pool.liquidity,
+        },
+        analysis: {
+          ticksAnalyzed: ticks.length,
+          rangeAnalyzed: `${tickRange} ticks above and below current price`,
+          concentrationRatio,
+          concentrationNote:
+            `${concentrationRatio} of gross liquidity is within the innermost band (1/10 of analyzed range). ` +
+            "Higher concentration means tighter liquidity around current price (lower slippage, higher LP fee capture).",
+        },
+        bands,
+      });
+    } catch (e) {
+      return errorResult(e);
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
 // Prompts
 // ---------------------------------------------------------------------------
 
