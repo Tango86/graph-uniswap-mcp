@@ -42,6 +42,7 @@ function formatFeeTier(feeTier: string | number): string {
   if (tier === 500) return "0.05%";
   if (tier === 3000) return "0.30%";
   if (tier === 10000) return "1.00%";
+  if (tier === 8388608) return "Dynamic";
   return (tier / 10000).toFixed(2) + "%";
 }
 
@@ -51,7 +52,11 @@ function formatUSD(value: string | number): string {
   if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
   if (Math.abs(n) >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
   if (Math.abs(n) >= 1e3) return "$" + (n / 1e3).toFixed(2) + "K";
-  return "$" + n.toFixed(2);
+  if (Math.abs(n) >= 0.01) return "$" + n.toFixed(2);
+  if (n === 0) return "$0.00";
+  // Small prices (e.g., memecoins): show significant digits
+  const decimals = Math.max(2, -Math.floor(Math.log10(Math.abs(n))) + 2);
+  return "$" + n.toFixed(Math.min(decimals, 12));
 }
 
 function formatNumber(value: string | number): string {
